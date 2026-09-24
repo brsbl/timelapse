@@ -178,7 +178,7 @@ export default async function plugin(bb: BbPluginApi) {
           for (let i = 0; i < rest.length; i += 2) {
             const flag = rest[i];
             const value = rest[i + 1];
-            if (!value) throw new Error(`Missing value for ${flag}`);
+            if (value === undefined) throw new Error(`Missing value for ${flag}`);
             if (flag === "--text") edit.text = value;
             else if (flag === "--position" && ["top", "middle", "bottom"].includes(value)) edit.position = value as TimelapseEdit["position"];
             else if (flag === "--start" && /^\d+$/.test(value)) edit.startFrame = Number(value);
