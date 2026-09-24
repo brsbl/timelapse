@@ -57,12 +57,14 @@ function ThreadPicker() {
 function VideoReview({ threadId }: { threadId: string }) {
   const rpc = useRpc<typeof rpcContract>();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const initializedVideoRef = useRef<string | null>(null);
   const [rootInput, setRootInput] = useState("");
   const [project, setProject] = useState<Project | null>(null);
   const [videoPath, setVideoPath] = useState("");
   const [info, setInfo] = useState<Probe | null>(null);
   const [edit, setEdit] = useState<TimelapseEdit | null>(null);
   const [frame, setFrame] = useState(0);
+  const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -72,8 +74,10 @@ function VideoReview({ threadId }: { threadId: string }) {
   const loadVideo = useCallback(async (path: string) => {
     if (!threadId) return;
     setVideoPath(path);
+    initializedVideoRef.current = null;
     setInfo(null);
     setEdit(null);
+    setPlaying(false);
     setExported("");
     setError("");
     const [probe, saved] = await Promise.all([
@@ -103,6 +107,12 @@ function VideoReview({ threadId }: { threadId: string }) {
 
   useEffect(() => { void refreshProject(); }, [refreshProject]);
 
+  useEffect(() => {
+    if (!info || !edit || !videoRef.current || initializedVideoRef.current === videoPath) return;
+    videoRef.current.currentTime = edit.startFrame / info.fps;
+    initializedVideoRef.current = videoPath;
+  }, [edit, info, videoPath]);
+
   const openProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!threadId || !rootInput.trim()) return;
@@ -126,6 +136,17 @@ function VideoReview({ threadId }: { threadId: string }) {
     const clamped = Math.max(0, Math.min(info.frames - 1, Math.round(next)));
     setFrame(clamped);
     if (videoRef.current) videoRef.current.currentTime = clamped / info.fps;
+  };
+
+  const togglePlayback = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!video.paused) { video.pause(); return; }
+    try {
+      await video.play();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
   };
 
   const saveEdit = async () => {
@@ -189,12 +210,14 @@ function VideoReview({ threadId }: { threadId: string }) {
                   key={videoSrc}
                   ref={videoRef}
                   src={videoSrc}
-                  controls
                   playsInline
                   preload="metadata"
                   crossOrigin="anonymous"
                   className="block max-h-[72vh] max-w-full"
                   onTimeUpdate={(event) => { if (info) setFrame(Math.min(info.frames - 1, Math.round(event.currentTarget.currentTime * info.fps))); }}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onEnded={() => setPlaying(false)}
                 />
                 {overlay ? <img alt="" aria-hidden="true" src={`data:image/svg+xml,${encodeURIComponent(overlay)}`} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
               </div>
@@ -202,7 +225,7 @@ function VideoReview({ threadId }: { threadId: string }) {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground"><span>Frame {frame.toLocaleString()} of {(info.frames - 1).toLocaleString()}</span><span>{(frame / info.fps).toFixed(2)} s</span></div>
                   <input type="range" min={0} max={info.frames - 1} step={1} value={frame} onChange={(event) => updateFrame(Number(event.target.value))} aria-label="Video frame" className="w-full accent-primary" />
-                  <div className="flex gap-2"><Button variant="outline" onClick={() => updateFrame(frame - 1)} disabled={frame === 0}>Previous frame</Button><Button variant="outline" onClick={() => updateFrame(frame + 1)} disabled={frame >= info.frames - 1}>Next frame</Button></div>
+                  <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void togglePlayback()}>{playing ? "Pause" : "Play"}</Button><Button variant="outline" onClick={() => updateFrame(frame - 1)} disabled={frame === 0}>Previous frame</Button><Button variant="outline" onClick={() => updateFrame(frame + 1)} disabled={frame >= info.frames - 1}>Next frame</Button></div>
                 </div>
               ) : <p className="text-sm text-muted-foreground">Loading video…</p>}
             </section>
