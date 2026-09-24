@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>timelapse</title>
+    <link rel="stylesheet" href="/vendor/maplibre-gl.css" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #07080c; overflow: hidden; }
+      #stage { position: relative; margin: 0 auto; background: #07080c; }
+      #map, #hud { position: absolute; inset: 0; }
+      #hud { pointer-events: none; }
+      #controls {
+        position: fixed; right: 16px; top: 16px; display: flex; gap: 8px; align-items: center;
+        font: 13px/1.2 ui-sans-serif, system-ui, sans-serif; color: #cfd3dc;
+        background: rgba(10, 12, 18, 0.8); padding: 8px 12px; border-radius: 10px; z-index: 10;
+      }
+      #controls button, #controls select { font: inherit; background: #1b1f2a; color: inherit; border: 1px solid #333a4a; border-radius: 6px; padding: 4px 10px; }
+      #controls input[type="range"] { width: 320px; }
+      body.recording #controls { display: none; }
+      .maplibregl-ctrl-attrib { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"><div id="map"></div><canvas id="hud"></canvas></div>
+    <div id="controls">
+      <select id="act">
+        <option value="buildings">Act 1 · Manhattan, built</option>
+        <option value="transit">Act 2 · 24h of subway</option>
+      </select>
+      <button id="play">Pause</button>
+      <input id="scrub" type="range" min="0" max="1" step="0.0005" value="0" />
+      <label><input id="follow" type="checkbox" checked /> camera path</label>
+      <button id="record">Record</button>
+    </div>
+    <script src="/vendor/maplibre-gl.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

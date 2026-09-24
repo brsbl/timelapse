@@ -1,0 +1,273 @@
+{
+  "id": "nyc",
+  "name": "New York City",
+  "timezone": "America/New_York",
+  "buildings": {
+    "kind": "nyc-open-data",
+    "raw": "data/raw/manhattan_buildings.geojson",
+    "heightUnit": "ft",
+    "yearRange": [
+      1820,
+      2026
+    ]
+  },
+  "transit": {
+    "gtfsDir": "data/raw/gtfs_subway",
+    "serviceIds": [
+      "Weekday"
+    ],
+    "label": "Subway"
+  },
+  "acts": {
+    "buildings": {
+      "seconds": 36,
+      "camera": [
+        {
+          "t": 0,
+          "center": [
+            -74.0115,
+            40.7045
+          ],
+          "zoom": 15.2,
+          "pitch": 62,
+          "bearing": 30
+        },
+        {
+          "t": 0.45,
+          "center": [
+            -73.9925,
+            40.7295
+          ],
+          "zoom": 14.3,
+          "pitch": 60,
+          "bearing": 18
+        },
+        {
+          "t": 1,
+          "center": [
+            -73.975,
+            40.756
+          ],
+          "zoom": 13.6,
+          "pitch": 58,
+          "bearing": 29
+        }
+      ],
+      "headline": [
+        "Every building in Manhattan,",
+        "in the year it was built"
+      ],
+      "accent": "#b4532a",
+      "tease": {
+        "seconds": 1.4,
+        "p": 1
+      },
+      "cameraVertical": [
+        {
+          "t": 0,
+          "center": [
+            -74.0125,
+            40.7055
+          ],
+          "zoom": 15.45,
+          "pitch": 72,
+          "bearing": 32
+        },
+        {
+          "t": 0.45,
+          "center": [
+            -73.995,
+            40.728
+          ],
+          "zoom": 14.25,
+          "pitch": 68,
+          "bearing": 24
+        },
+        {
+          "t": 1,
+          "center": [
+            -73.975,
+            40.757
+          ],
+          "zoom": 13.05,
+          "pitch": 62,
+          "bearing": 29
+        }
+      ],
+      "look": {
+        "bloom": 0,
+        "grain": 0,
+        "saturate": 1,
+        "vignette": 0,
+        "ink": "dark"
+      },
+      "type": "nyt",
+      "heightScale": 1.6,
+      "dek": "Color shows when each building went up; heights exaggerated 1.6×.",
+      "source": "Source: NYC Open Data building footprints; pre-1900 dates are approximate. Map: © OpenStreetMap, OpenFreeMap",
+      "landmarks": [
+        {
+          "name": "Flatiron Building",
+          "year": 1902,
+          "lngLat": [
+            -73.9897,
+            40.7411
+          ],
+          "h": 87,
+          "side": "left"
+        },
+        {
+          "name": "Woolworth Building",
+          "year": 1913,
+          "lngLat": [
+            -74.0081,
+            40.7124
+          ],
+          "h": 241,
+          "side": "right"
+        },
+        {
+          "name": "Chrysler Building",
+          "year": 1930,
+          "lngLat": [
+            -73.9755,
+            40.7516
+          ],
+          "h": 282,
+          "side": "right"
+        },
+        {
+          "name": "Empire State Building",
+          "year": 1931,
+          "lngLat": [
+            -73.9857,
+            40.7484
+          ],
+          "h": 381,
+          "side": "left"
+        },
+        {
+          "name": "One World Trade Center",
+          "year": 2014,
+          "lngLat": [
+            -74.0134,
+            40.7127
+          ],
+          "h": 417,
+          "side": "left"
+        }
+      ],
+      "growYears": 8
+    },
+    "transit": {
+      "seconds": 60,
+      "startHour": 4,
+      "endHour": 28,
+      "camera": [
+        {
+          "t": 0,
+          "center": [
+            -73.975,
+            40.735
+          ],
+          "zoom": 11.9,
+          "pitch": 50,
+          "bearing": -25
+        },
+        {
+          "t": 0.5,
+          "center": [
+            -73.945,
+            40.715
+          ],
+          "zoom": 11.5,
+          "pitch": 52,
+          "bearing": -5
+        },
+        {
+          "t": 1,
+          "center": [
+            -73.985,
+            40.748
+          ],
+          "zoom": 12.4,
+          "pitch": 58,
+          "bearing": 20
+        }
+      ],
+      "headline": [
+        "Every subway train in NYC,",
+        "over 24 hours"
+      ],
+      "accent": "#7db8f0",
+      "tease": {
+        "seconds": 1.4,
+        "p": 0.19
+      },
+      "cameraVertical": [
+        {
+          "t": 0,
+          "center": [
+            -73.975,
+            40.735
+          ],
+          "zoom": 11.8,
+          "pitch": 48,
+          "bearing": 29
+        },
+        {
+          "t": 0.5,
+          "center": [
+            -73.95,
+            40.712
+          ],
+          "zoom": 11.4,
+          "pitch": 52,
+          "bearing": 8
+        },
+        {
+          "t": 1,
+          "center": [
+            -73.984,
+            40.748
+          ],
+          "zoom": 12.4,
+          "pitch": 60,
+          "bearing": -12
+        }
+      ],
+      "look": {
+        "bloom": 0.34,
+        "grain": 0.03,
+        "saturate": 1.1
+      },
+      "type": "signage",
+      "speedKey": true,
+      "callouts": [
+        {
+          "name": "E/F express, Queens",
+          "note": "36 mph · fastest stretch",
+          "lngLat": [
+            -73.909,
+            40.754
+          ],
+          "side": "right"
+        },
+        {
+          "name": "Downtown Brooklyn",
+          "note": "10–12 mph · slowest stretch",
+          "lngLat": [
+            -73.985,
+            40.69
+          ],
+          "side": "left",
+          "rise": 50
+        }
+      ],
+      "units": "mph"
+    }
+  },
+  "lat": 40.73,
+  "lon": -73.99,
+  "utcOffset": -4
+}

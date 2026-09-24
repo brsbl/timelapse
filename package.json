@@ -1,0 +1,17 @@
+{
+  "name": "timelapse",
+  "version": "0.1.0",
+  "description": "Turn datasets with a time dimension into animated 3D map videos and stills.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "fetch:nyc": "bash scripts/fetch-nyc.sh",
+    "build:nyc": "node scripts/build-buildings.mjs nyc && node scripts/build-transit.mjs nyc",
+    "serve": "node server.mjs"
+  },
+  "dependencies": {
+    "@fontsource/libre-franklin": "^5.3.0",
+    "geist": "^1.7.2",
+    "maplibre-gl": "^5.24.0"
+  }
+}
