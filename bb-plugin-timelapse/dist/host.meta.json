@@ -1,12 +1,12 @@
 {
   "sdkMajor": 0,
-  "sdkVersion": "0.5.16",
+  "sdkVersion": "0.5.8",
   "artifactFormatVersion": 1,
   "pluginId": "timelapse",
   "pluginVersion": "0.1.0",
   "builtWith": {
-    "bbVersion": "0.0.0-dev",
-    "pluginSdkVersion": "0.5.16"
+    "bbVersion": "0.43.4-nightly.35739502552.1",
+    "pluginSdkVersion": "0.5.8"
   },
-  "artifactDigest": "c947e4c428a28ceec5c9b54cbc5b3af4475558e4246f09da7b5cd28d8e9fd777"
+  "artifactDigest": "42b3b32ca2d0d3c4a52fa14ea91f0ac8d2df7fef4ec5e78c5b0e038b6e9edc83"
 }

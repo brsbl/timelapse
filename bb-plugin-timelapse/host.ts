@@ -9,22 +9,21 @@ import { captionLayout } from "./caption";
 import { hostContract } from "./contract";
 import type { TimelapseEdit } from "./contract";
 
-async function run(command: string, args: string[], signal: AbortSignal, input?: string) {
+async function run(command: string, args: string[], signal: AbortSignal) {
   return new Promise<string>((resolve, reject) => {
-    const child = spawn(command, args, { stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"] });
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     const abort = () => child.kill("SIGTERM");
     signal.addEventListener("abort", abort, { once: true });
-    child.stdout.on("data", (chunk) => { stdout += String(chunk); });
-    child.stderr.on("data", (chunk) => { stderr = (stderr + String(chunk)).slice(-4000); });
+    child.stdout?.on("data", (chunk) => { stdout += String(chunk); });
+    child.stderr?.on("data", (chunk) => { stderr = (stderr + String(chunk)).slice(-4000); });
     child.on("error", reject);
     child.on("close", (code) => {
       signal.removeEventListener("abort", abort);
       if (code === 0) resolve(stdout);
       else reject(new Error(`${command} failed (${code}): ${stderr}`));
     });
-    if (input !== undefined) child.stdin.end(input);
   });
 }
 
@@ -123,6 +122,19 @@ export default experimental_defineHostEntry({
   handlers: {
     inspect: async ({ root }) => ({ videos: listVideos(root) }),
     probe: async ({ root, path: relative }, context) => probe(videoFile(root, relative).file, context.signal),
+    readVideo: async ({ root, path: relative, start, length }) => {
+      const file = videoFile(root, relative).file;
+      const handle = await fs.promises.open(file, "r");
+      try {
+        const { size } = await handle.stat();
+        if (start >= size) return { total: size, content: "" };
+        const buffer = Buffer.alloc(Math.min(length, size - start));
+        const { bytesRead } = await handle.read(buffer, 0, buffer.length, start);
+        return { total: size, content: buffer.subarray(0, bytesRead).toString("base64") };
+      } finally {
+        await handle.close();
+      }
+    },
     exportMedia: async ({ root, path: relative, edit, kind, frame }, context) => {
       const { out, file } = videoFile(root, relative);
       const info = await probe(file, context.signal);

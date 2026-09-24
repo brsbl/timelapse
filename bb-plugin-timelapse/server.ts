@@ -25,13 +25,19 @@ export const rpcContract = defineRpcContract({
 
 export default async function plugin(bb: BbPluginApi) {
   const host = bb.hosts.experimental_client({ contract: hostContract });
+  const videoChunkSize = 1024 * 1024;
 
   async function contextFor(threadId: string) {
     const thread = await bb.sdk.threads.get({ threadId });
-    if (!thread.environmentId) throw new Error("This thread has no workspace host");
-    const environment = await bb.sdk.environments.get({ environmentId: thread.environmentId });
-    if (!environment.hostId) throw new Error("Workspace host is unavailable");
-    return { hostId: environment.hostId };
+    if (thread.environmentId) {
+      const environment = await bb.sdk.environments.get({ environmentId: thread.environmentId });
+      if (!environment.hostId) throw new Error("Workspace host is unavailable");
+      return { hostId: environment.hostId };
+    }
+    const project = await bb.sdk.projects.get({ projectId: thread.projectId });
+    const source = project.sources.find((item) => item.isDefault && item.type === "local_path");
+    if (!source) throw new Error("This thread has no workspace host");
+    return { hostId: source.hostId };
   }
 
   async function savedRoot(threadId: string) {
@@ -84,6 +90,51 @@ export default async function plugin(bb: BbPluginApi) {
     return { path: result.path, previewBaseUrl: preview.baseUrl };
   }
 
+  bb.http.route("GET", "/video", async (context) => {
+    const url = new URL(context.req.url);
+    const threadId = url.searchParams.get("threadId");
+    const path = url.searchParams.get("path");
+    if (!threadId || !path) return new Response("Choose a thread and video", { status: 400 });
+    try {
+      const { root, hostId } = await requireProject(threadId);
+      const range = context.req.header("range");
+      const match = range?.match(/^bytes=(\d+)-(\d*)$/);
+      if (range && !match) return new Response("Unsupported byte range", { status: 416 });
+      const start = match ? Number(match[1]) : 0;
+      const requestedEnd = match?.[2] ? Number(match[2]) : null;
+      if (!Number.isSafeInteger(start) || requestedEnd !== null && (!Number.isSafeInteger(requestedEnd) || requestedEnd < start)) return new Response("Invalid byte range", { status: 416 });
+      const first = await host.call("readVideo", { root, path, start, length: videoChunkSize }, { hostId });
+      if (start >= first.total) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${first.total}` } });
+      const end = Math.min(first.total - 1, requestedEnd ?? first.total - 1, start + videoChunkSize - 1);
+      const bytes = Buffer.from(first.content, "base64").subarray(0, end - start + 1);
+      const headers = new Headers({
+        "Accept-Ranges": "bytes",
+        "Content-Type": "video/mp4",
+        "Content-Length": String(bytes.length),
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      });
+      if (range) headers.set("Content-Range", `bytes ${start}-${start + bytes.length - 1}/${first.total}`);
+      if (range) return new Response(new Uint8Array(bytes), { status: 206, headers });
+      headers.set("Content-Length", String(first.total));
+      let offset = bytes.length;
+      const stream = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          if (offset === bytes.length) controller.enqueue(new Uint8Array(bytes));
+          if (offset >= first.total) { controller.close(); return; }
+          const chunk = await host.call("readVideo", { root, path, start: offset, length: videoChunkSize }, { hostId });
+          const data = Buffer.from(chunk.content, "base64");
+          if (!data.length) { controller.error(new Error("Video ended unexpectedly")); return; }
+          offset += data.length;
+          controller.enqueue(new Uint8Array(data));
+        },
+      });
+      return new Response(stream, { headers });
+    } catch (cause) {
+      return new Response(cause instanceof Error ? cause.message : String(cause), { status: 400 });
+    }
+  });
+
   bb.rpc.register(rpcContract, {
     project_get: async ({ threadId }) => {
       const root = await savedRoot(threadId);
@@ -110,11 +161,11 @@ export default async function plugin(bb: BbPluginApi) {
       if (!threadId) throw new Error("Open a bb thread first");
       if (path) {
         const [info, edit] = await Promise.all([probeVideo(threadId, path), getEdit(threadId, path)]);
-        return { path, ...info, edit };
+        return JSON.stringify({ path, ...info, edit });
       }
       const root = await savedRoot(threadId);
       if (!root) throw new Error("Open a project with bb timelapse open first");
-      return project(threadId, root);
+      return JSON.stringify(await project(threadId, root));
     },
   });
 
@@ -126,7 +177,7 @@ export default async function plugin(bb: BbPluginApi) {
       if (!threadId) throw new Error("Open a bb thread first");
       if (kind === "still" && frame === undefined) throw new Error("Choose a frame number");
       const edit = await getEdit(threadId, path);
-      return exportMedia(threadId, path, edit, kind, kind === "still" ? frame ?? null : null);
+      return JSON.stringify(await exportMedia(threadId, path, edit, kind, kind === "still" ? frame ?? null : null));
     },
   });
 

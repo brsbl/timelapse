@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { definePluginApp, useBbContext, useRpc } from "@get-bb/plugin-sdk/app";
+import { definePluginApp, useBbNavigate, useRpc, useSdk } from "@get-bb/plugin-sdk/app";
 import type { rpcContract } from "./server";
 import type { TimelapseEdit } from "./contract";
 import { captionSvg } from "./caption";
@@ -15,8 +15,46 @@ function mediaUrl(baseUrl: string, relative: string) {
   return `${baseUrl.replace(/\/$/, "")}/${relative.split("/").map(encodeURIComponent).join("/")}`;
 }
 
-function VideoReview() {
-  const { threadId } = useBbContext();
+function videoUrl(threadId: string, path: string) {
+  return `/api/v1/plugins/timelapse/http/video?threadId=${encodeURIComponent(threadId)}&path=${encodeURIComponent(path)}`;
+}
+
+function ThreadPicker() {
+  const sdk = useSdk();
+  const navigate = useBbNavigate();
+  const [threads, setThreads] = useState<Array<{ id: string; title: string }>>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void sdk.threads.list({ limit: 100 }).then((items) => {
+      if (active) setThreads(items.map((item) => ({ id: item.id, title: item.title ?? item.titleFallback ?? item.id })));
+    }).catch((cause) => {
+      if (active) setError(cause instanceof Error ? cause.message : String(cause));
+    });
+    return () => { active = false; };
+  }, [sdk]);
+
+  return (
+    <div className="h-full overflow-y-auto bg-background px-4 py-5 text-foreground md:px-6">
+      <div className="mx-auto max-w-3xl space-y-4">
+        <h1 className="text-xl font-semibold tracking-tight">Timelapse</h1>
+        <p className="text-sm text-muted-foreground">Choose a thread to review its timelapse project.</p>
+        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+        <div className="space-y-2">
+          {threads.map((thread) => (
+            <button key={thread.id} type="button" onClick={() => navigate.toPluginPanel("review", { subPath: thread.id })} className="block w-full rounded-lg border border-border p-3 text-left hover:bg-accent">
+              <span className="block font-medium">{thread.title}</span>
+              <span className="block text-xs text-muted-foreground">{thread.id}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VideoReview({ threadId }: { threadId: string }) {
   const rpc = useRpc<typeof rpcContract>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [rootInput, setRootInput] = useState("");
@@ -122,9 +160,8 @@ function VideoReview() {
     }
   };
 
-  if (!threadId) return <div className="p-6 text-sm text-muted-foreground">Open a thread to review a timelapse project.</div>;
   const selected = project?.videos.find((video) => video.path === videoPath);
-  const videoSrc = project && videoPath ? mediaUrl(project.previewBaseUrl, videoPath) : "";
+  const videoSrc = project && videoPath ? videoUrl(threadId, videoPath) : "";
   const overlay = info && edit?.text.trim() ? captionSvg(info.width, info.height, edit) : "";
   return (
     <div className="h-full min-h-0 flex-1 overflow-y-auto bg-background text-foreground">
@@ -197,5 +234,6 @@ function VideoReview() {
 }
 
 export default definePluginApp((app) => {
-  app.slots.navPanel({ id: "review", title: "Timelapse", icon: "Film", path: "review", component: VideoReview });
+  app.slots.navPanel({ id: "review", title: "Timelapse", icon: "Film", path: "review", component: ({ subPath }) => subPath ? <VideoReview key={subPath} threadId={subPath} /> : <ThreadPicker /> });
+  app.slots.threadPanelAction({ id: "review", title: "Timelapse", icon: "Film", layout: "flush", component: ({ threadId }) => <VideoReview threadId={threadId} /> });
 });

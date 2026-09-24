@@ -33,6 +33,10 @@ export const hostContract = defineRpcContract({
     input: z.object({ root: z.string().min(1), path: z.string().min(1) }).strict(),
     output: probeSchema,
   },
+  readVideo: {
+    input: z.object({ root: z.string().min(1), path: z.string().min(1), start: z.number().int().min(0), length: z.number().int().min(1).max(1024 * 1024) }).strict(),
+    output: z.object({ total: z.number().int().positive(), content: z.string() }).strict(),
+  },
   exportMedia: {
     input: z.object({
       root: z.string().min(1),
