@@ -7,7 +7,10 @@
   "scripts": {
     "fetch:nyc": "bash scripts/fetch-nyc.sh",
     "build:nyc": "node scripts/build-buildings.mjs nyc && node scripts/build-transit.mjs nyc",
-    "serve": "node server.mjs"
+    "fetch:chicago": "bash scripts/fetch-chicago.sh",
+    "build:chicago": "node scripts/build-buildings.mjs chicago && node --max-old-space-size=6000 scripts/build-transit.mjs chicago",
+    "serve": "node server.mjs",
+    "build:activity": "node scripts/build-chicago-activity.mjs"
   },
   "dependencies": {
     "@fontsource/libre-franklin": "^5.3.0",
