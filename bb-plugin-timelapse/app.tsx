@@ -58,6 +58,7 @@ function VideoReview({ threadId }: { threadId: string }) {
   const rpc = useRpc<typeof rpcContract>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const initializedVideoRef = useRef<string | null>(null);
+  const videoLoadRef = useRef(0);
   const [rootInput, setRootInput] = useState("");
   const [project, setProject] = useState<Project | null>(null);
   const [videoPath, setVideoPath] = useState("");
@@ -73,6 +74,7 @@ function VideoReview({ threadId }: { threadId: string }) {
 
   const loadVideo = useCallback(async (path: string) => {
     if (!threadId) return;
+    const loadId = ++videoLoadRef.current;
     setVideoPath(path);
     initializedVideoRef.current = null;
     setInfo(null);
@@ -80,13 +82,18 @@ function VideoReview({ threadId }: { threadId: string }) {
     setPlaying(false);
     setExported("");
     setError("");
-    const [probe, saved] = await Promise.all([
-      rpc.call("video_probe", { threadId, path }),
-      rpc.call("edit_get", { threadId, path }),
-    ]);
-    setInfo(probe);
-    setEdit(saved);
-    setFrame(saved.startFrame);
+    try {
+      const [probe, saved] = await Promise.all([
+        rpc.call("video_probe", { threadId, path }),
+        rpc.call("edit_get", { threadId, path }),
+      ]);
+      if (videoLoadRef.current !== loadId) return;
+      setInfo(probe);
+      setEdit(saved);
+      setFrame(saved.startFrame);
+    } catch (cause) {
+      if (videoLoadRef.current === loadId) throw cause;
+    }
   }, [rpc, threadId]);
 
   const refreshProject = useCallback(async () => {

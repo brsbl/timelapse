@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -145,19 +144,21 @@ export default experimental_defineHostEntry({
       const base = `${path.basename(relative, ".mp4").replace(/[^a-z0-9_-]/gi, "-")}-${Date.now()}-${randomUUID().slice(0, 6)}`;
       const extension = kind === "still" ? "png" : "mp4";
       const target = path.join(editsDir, `${base}.${extension}`);
-      const temp = fs.mkdtempSync(path.join(os.tmpdir(), "timelapse-caption-"));
+      const temp = fs.mkdtempSync(path.join(editsDir, ".timelapse-export-"));
       try {
         const overlay = path.join(temp, "caption.png");
+        const output = path.join(temp, `output.${extension}`);
         const hasCaption = await rasterCaption(info.width, info.height, edit, overlay);
         const start = kind === "still" ? (frame as number) / info.fps : edit.startFrame / info.fps;
         const args = ["-hide_banner", "-loglevel", "error", "-y", "-ss", String(start), "-i", file];
         if (hasCaption) args.push("-loop", "1", "-i", overlay, "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto[v]", "-map", "[v]");
         if (kind === "still") {
-          args.push("-frames:v", "1", target);
+          args.push("-frames:v", "1", output);
         } else {
-          args.push("-frames:v", String(edit.endFrame - edit.startFrame), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "medium", "-movflags", "+faststart", target);
+          args.push("-frames:v", String(edit.endFrame - edit.startFrame), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "medium", "-movflags", "+faststart", output);
         }
         await run("ffmpeg", args, context.signal);
+        fs.renameSync(output, target);
         return { path: path.relative(out, target).split(path.sep).join("/") };
       } finally {
         fs.rmSync(temp, { recursive: true, force: true });
