@@ -257,7 +257,7 @@ function applyGround(g, light) {
   });
 }
 
-const ERAS = [
+const ERAS = city.eras ?? [
   { at: 1820, label: "Farms & harbor" },
   { at: 1855, label: "Tenements & factories" },
   { at: 1898, label: "The skyscraper age" },
@@ -392,19 +392,20 @@ const buildingsAct = {
     const year = lerp(buildingStats.minYear, buildingStats.maxYear, p);
     const growthYear = Math.max(year, lerp(buildingStats.minYear, buildingStats.maxYear, pRaw));
     const age = ["-", growthYear, ["get", "y"]];
-    map.setPaintProperty("buildings", "fill-extrusion-height", [
+    const undated = ["==", ["get", "y"], 0];
+    map.setPaintProperty("buildings", "fill-extrusion-height", ["case", undated, 1.5, [
       "*", ["get", "h"], HEIGHT_SCALE,
       ["interpolate", ["cubic-bezier", 0.25, 0.1, 0.25, 1], age, 0, 0, GROW_YEARS, 1],
-    ]);
+    ]]);
     const split = params.get("split")?.match(/^(before|since)(\d{4})$/);
-    map.setPaintProperty("buildings", "fill-extrusion-color", split
+    map.setPaintProperty("buildings", "fill-extrusion-color", ["case", undated, "#e2ded6", split
       ? ["case", [split[1] === "before" ? "<" : ">=", ["get", "y"], Number(split[2])], MATERIAL, "#dedad2"]
       : [
         "interpolate", ["linear"], age,
         -0.001, NATURAL.land,
         0, "#ffc94d",
         GROW_YEARS * 0.85, MATERIAL,
-      ]);
+      ]]);
     return { year };
   },
   overlay(state) {
@@ -422,7 +423,7 @@ const buildingsAct = {
       series: buildingBins,
       playhead: (state.year - buildingStats.minYear) / (buildingStats.perYear.length - 1),
       labels: [String(buildingStats.minYear), String(buildingStats.maxYear)],
-      credit: `NYC Open Data footprints · pre-1900 dates approximate${HEIGHT_SCALE !== 1 ? ` · heights ×${HEIGHT_SCALE}` : ""}`,
+      credit: city.acts.buildings.source ?? `NYC Open Data footprints · pre-1900 dates approximate${HEIGHT_SCALE !== 1 ? ` · heights ×${HEIGHT_SCALE}` : ""}`,
     };
   },
 };
@@ -669,7 +670,7 @@ const transitAct = {
       series: runningPerBucket,
       playhead: (state.now - dayStart) / (dayEnd - dayStart),
       labels: [`${transitCfg.startHour % 12 || 12} AM`, "noon", `${transitCfg.endHour % 12 || 12} AM`],
-      credit: "MTA GTFS weekday schedule · every scheduled train",
+      credit: transitCfg.source ?? "MTA GTFS weekday schedule · every scheduled train",
     };
   },
 };
@@ -866,13 +867,17 @@ function drawBars(ctx, s, o, x, y, w, h) {
   ctx.fillRect(x, y + h, w, 1.5 * s);
   ctx.font = `500 ${17 * s}px ${FRANKLIN}`;
   ctx.fillStyle = NYT_INK.muted;
-  for (const tick of [1820, 1850, 1900, 1950, 2000, 2026]) {
-    const tx = x + ((tick - buildingStats.minYear + 0.5) / perYear.length) * w;
+  const { minYear, maxYear } = buildingStats;
+  const ticks = [minYear];
+  for (let t = Math.ceil((minYear + 1) / 50) * 50; t < maxYear; t += 50) if (t - minYear >= 15 && maxYear - t >= 15) ticks.push(t);
+  ticks.push(maxYear);
+  for (const tick of ticks) {
+    const tx = x + ((tick - minYear + 0.5) / perYear.length) * w;
     ctx.fillStyle = NYT_INK.rule;
     ctx.fillRect(tx - 0.5 * s, y + h, 1 * s, 7 * s);
     ctx.fillStyle = NYT_INK.muted;
-    ctx.textAlign = tick === 1820 ? "left" : tick === 2026 ? "right" : "center";
-    ctx.fillText(String(tick), tick === 1820 ? x : tick === 2026 ? x + w : tx, y + h + 30 * s);
+    ctx.textAlign = tick === minYear ? "left" : tick === maxYear ? "right" : "center";
+    ctx.fillText(String(tick), tick === minYear ? x : tick === maxYear ? x + w : tx, y + h + 30 * s);
   }
   ctx.textAlign = "left";
   const px = x + ((o.year - buildingStats.minYear) / perYear.length) * w;

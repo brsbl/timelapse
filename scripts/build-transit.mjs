@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import readline from "node:readline";
 
 const cityId = process.argv[2] ?? "nyc";
 const root = path.resolve(import.meta.dirname, "..");
@@ -17,6 +18,41 @@ function readCsv(name) {
     header.forEach((h, i) => (row[h] = cells[i] ?? ""));
     return row;
   });
+}
+
+async function eachCsvRow(name, fn) {
+  const rl = readline.createInterface({ input: fs.createReadStream(path.join(gtfsDir, name)), crlfDelay: Infinity });
+  let header = null;
+  for await (const raw of rl) {
+    const line = header ? raw : raw.replace(/^\uFEFF/, "");
+    if (!line) continue;
+    const cells = splitCsvLine(line);
+    if (!header) {
+      header = cells;
+      continue;
+    }
+    const row = {};
+    header.forEach((h, i) => (row[h] = cells[i] ?? ""));
+    fn(row);
+  }
+}
+
+function activeServices(date) {
+  const ids = new Set();
+  const day = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    new Date(`${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T12:00:00Z`).getUTCDay()
+  ];
+  if (fs.existsSync(path.join(gtfsDir, "calendar.txt"))) {
+    for (const c of readCsv("calendar.txt")) if (c[day] === "1" && c.start_date <= date && c.end_date >= date) ids.add(c.service_id);
+  }
+  if (fs.existsSync(path.join(gtfsDir, "calendar_dates.txt"))) {
+    for (const c of readCsv("calendar_dates.txt")) {
+      if (c.date !== date) continue;
+      if (c.exception_type === "1") ids.add(c.service_id);
+      if (c.exception_type === "2") ids.delete(c.service_id);
+    }
+  }
+  return ids;
 }
 
 function splitCsvLine(line) {
@@ -64,25 +100,28 @@ function projectOnSegment(p, a, b) {
   return { t, d2: (qx - px) ** 2 + (qy - py) ** 2 };
 }
 
-const routes = new Map(readCsv("routes.txt").map((r) => [r.route_id, r]));
+const routeTypes = cfg.routeTypes ? new Set(cfg.routeTypes.map(String)) : null;
+const routes = new Map(readCsv("routes.txt").filter((r) => !routeTypes || routeTypes.has(r.route_type)).map((r) => [r.route_id, r]));
 const stops = new Map(readCsv("stops.txt").map((s) => [s.stop_id, [Number(s.stop_lon), Number(s.stop_lat)]]));
 
+const serviceIds = cfg.serviceDate ? activeServices(cfg.serviceDate) : new Set(cfg.serviceIds);
+const trips = readCsv("trips.txt").filter((t) => serviceIds.has(t.service_id) && routes.has(t.route_id));
+const tripIds = new Set(trips.map((t) => t.trip_id));
+const shapeIds = new Set(trips.map((t) => t.shape_id).filter(Boolean));
+
 const shapePts = new Map();
-for (const r of readCsv("shapes.txt")) {
+await eachCsvRow("shapes.txt", (r) => {
+  if (!shapeIds.has(r.shape_id)) return;
   if (!shapePts.has(r.shape_id)) shapePts.set(r.shape_id, []);
   shapePts.get(r.shape_id).push([Number(r.shape_pt_sequence), Number(r.shape_pt_lon), Number(r.shape_pt_lat)]);
-}
-
-const serviceIds = new Set(cfg.serviceIds);
-const trips = readCsv("trips.txt").filter((t) => serviceIds.has(t.service_id));
-const tripIds = new Set(trips.map((t) => t.trip_id));
+});
 
 const stopTimes = new Map();
-for (const r of readCsv("stop_times.txt")) {
-  if (!tripIds.has(r.trip_id)) continue;
+await eachCsvRow("stop_times.txt", (r) => {
+  if (!tripIds.has(r.trip_id)) return;
   if (!stopTimes.has(r.trip_id)) stopTimes.set(r.trip_id, []);
   stopTimes.get(r.trip_id).push(r);
-}
+});
 
 const shapes = [];
 const shapeIndex = new Map();

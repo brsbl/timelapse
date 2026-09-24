@@ -16,9 +16,13 @@ const features = [];
 let dropped = 0;
 
 for (const f of raw.features) {
-  const year = Number.parseInt(f.properties.construction_year, 10);
-  const height = Number.parseFloat(f.properties.height_roof) * toMeters;
-  if (!Number.isFinite(year) || year < 1600 || !Number.isFinite(height) || height <= 0 || !f.geometry) {
+  const rawYear = Number.parseInt(f.properties[cfg.yearField ?? "construction_year"], 10);
+  const dated = Number.isFinite(rawYear) && rawYear >= 1600;
+  const year = dated ? rawYear : 0;
+  const height = cfg.storiesField
+    ? (Number.parseFloat(f.properties[cfg.storiesField]) || cfg.defaultStories || 0) * (cfg.floorHeight ?? 3.7)
+    : Number.parseFloat(f.properties[cfg.heightField ?? "height_roof"]) * toMeters;
+  if ((!dated && !cfg.keepUndated) || !Number.isFinite(height) || height <= 0 || !f.geometry) {
     dropped++;
     continue;
   }
@@ -27,7 +31,7 @@ for (const f of raw.features) {
     g.type === "MultiPolygon" ? g.coordinates.map((p) => p.map(roundRing)) : g.coordinates.map(roundRing);
   features.push({
     type: "Feature",
-    properties: { y: Math.max(year, minYear), h: Math.round(height * 10) / 10 },
+    properties: { y: dated ? Math.max(year, minYear) : 0, h: Math.round(height * 10) / 10 },
     geometry: { type: g.type, coordinates },
   });
 }
@@ -45,4 +49,4 @@ for (const f of features) {
 }
 fs.writeFileSync(path.join(outDir, "buildings-stats.json"), JSON.stringify({ minYear, maxYear, perYear }));
 
-console.log(`buildings: kept ${features.length}, dropped ${dropped}`);
+console.log(`buildings: kept ${features.length} (${features.filter((f) => f.properties.y === 0).length} undated), dropped ${dropped}`);
