@@ -138,7 +138,7 @@
       "type": "nyt",
       "heightScale": 1.6,
       "dek": "Color shows when each building went up. Grey: year unknown.",
-      "source": "Source: City of Chicago building footprints (years through 2015); heights estimated from floor counts. Map: © OpenStreetMap, OpenFreeMap",
+      "source": "Source: City of Chicago building footprints (years through 2015); heights estimated from floor counts. Map: \u00a9 OpenStreetMap, OpenFreeMap",
       "landmarks": [
         {
           "name": "The Rookery",
@@ -270,7 +270,7 @@
       "callouts": [
         {
           "name": "Purple Line Express",
-          "note": "48 mph · fastest stretch",
+          "note": "48 mph \u00b7 fastest stretch",
           "lngLat": [
             -87.659,
             41.994
@@ -279,7 +279,7 @@
         },
         {
           "name": "The Loop",
-          "note": "9–11 mph · slowest stretch",
+          "note": "9\u201311 mph \u00b7 slowest stretch",
           "lngLat": [
             -87.63,
             41.88
@@ -289,7 +289,103 @@
         }
       ],
       "units": "mph",
-      "source": "CTA GTFS weekday schedule · every scheduled train"
+      "source": "CTA GTFS weekday schedule \u00b7 every scheduled train"
+    },
+    "ridership": {
+      "seconds": 28,
+      "camera": [
+        {
+          "t": 0,
+          "center": [
+            -87.641,
+            41.885
+          ],
+          "zoom": 13.35,
+          "pitch": 64,
+          "bearing": -12
+        },
+        {
+          "t": 0.55,
+          "center": [
+            -87.638,
+            41.89
+          ],
+          "zoom": 13.0,
+          "pitch": 64,
+          "bearing": 0
+        },
+        {
+          "t": 1,
+          "center": [
+            -87.641,
+            41.885
+          ],
+          "zoom": 13.35,
+          "pitch": 64,
+          "bearing": 12
+        }
+      ],
+      "headline": [
+        "The L, station by station,",
+        "before and after 2020"
+      ],
+      "accent": "#67d8ff",
+      "type": "signage",
+      "look": {
+        "bloom": 0.12,
+        "grain": 0.02,
+        "saturate": 1.07,
+        "vignette": 0.35
+      },
+      "source": "CTA monthly station entries \u00b7 height shows average weekday rides"
+    },
+    "divvy": {
+      "seconds": 24,
+      "camera": [
+        {
+          "t": 0,
+          "center": [
+            -87.655,
+            41.89
+          ],
+          "zoom": 12.6,
+          "pitch": 65,
+          "bearing": -18
+        },
+        {
+          "t": 0.55,
+          "center": [
+            -87.65,
+            41.905
+          ],
+          "zoom": 12.3,
+          "pitch": 63,
+          "bearing": 0
+        },
+        {
+          "t": 1,
+          "center": [
+            -87.655,
+            41.89
+          ],
+          "zoom": 12.6,
+          "pitch": 65,
+          "bearing": 16
+        }
+      ],
+      "headline": [
+        "A day of Divvy,",
+        "between Chicago neighborhoods"
+      ],
+      "accent": "#68d8e9",
+      "type": "signage",
+      "look": {
+        "bloom": 0.18,
+        "grain": 0.02,
+        "saturate": 1.1,
+        "vignette": 0.35
+      },
+      "source": "Divvy trips, Sep 18 2019 \u00b7 arcs show origin\u2013destination connections, not routes"
     }
   }
 }

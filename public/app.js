@@ -565,11 +565,11 @@ function heatLineFeatures() {
     for (let i = 0; i + 3 < c.length; i += 2) raw.push(Math.log1p(counts.get(key((c[i] + c[i + 2]) / 2, (c[i + 1] + c[i + 3]) / 2)) ?? 0) / max);
     let run = null;
     raw.forEach((_, j) => {
-      const lo = Math.max(0, j - 4);
-      const hi = Math.min(raw.length, j + 5);
+      const lo = Math.max(0, j - 12);
+      const hi = Math.min(raw.length, j + 13);
       let sum = 0;
       for (let k = lo; k < hi; k++) sum += raw[k];
-      const w = Math.round((sum / (hi - lo)) * 12) / 12;
+      const w = Math.round((sum / (hi - lo)) * 8) / 8;
       const i = j * 2;
       if (!run || run.w !== w) {
         if (run) features.push({ type: "Feature", properties: { w: run.w }, geometry: { type: "LineString", coordinates: run.coords } });
@@ -600,15 +600,15 @@ const transitAct = {
         id: "heat-glow",
         type: "line",
         source: "heat",
-        layout: { "line-cap": "butt", "line-join": "round", "line-sort-key": ["get", "w"] },
-        paint: { "line-color": ramp, "line-width": ["interpolate", ["linear"], ["get", "w"], 0.3, 4, 1, 22], "line-blur": 10, "line-opacity": ["interpolate", ["linear"], ["get", "w"], 0.3, 0.15, 1, 0.55] },
+        layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "w"] },
+        paint: { "line-color": ramp, "line-width": 12, "line-blur": 8, "line-opacity": 0.35 },
       });
       map.addLayer({
         id: "heat",
         type: "line",
         source: "heat",
-        layout: { "line-cap": "butt", "line-join": "round", "line-sort-key": ["get", "w"] },
-        paint: { "line-color": ramp, "line-width": ["interpolate", ["linear"], ["get", "w"], 0.3, 1.2, 1, 5] },
+        layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "w"] },
+        paint: { "line-color": ramp, "line-width": 3.4 },
       });
     }
     if (densityMode) {
@@ -1072,11 +1072,36 @@ function drawOverlay(ctx, s, o, cfg) {
   ctx.restore();
 }
 
-const acts = { buildings: buildingsAct, transit: transitAct };
+const chicagoActivity = cityId === "chicago"
+  ? await import("./chicago-activity.js").then(({ createChicagoActivity }) => createChicagoActivity(map, maplibregl, () => {
+    setTransitVisible(false);
+    map.getSource("trails").setData(emptyFc);
+    map.getSource("heads").setData(emptyFc);
+    setTerrainVisible(true);
+    setLabelInk("#8a93a8", BG);
+    applyGround(SKY[0], { azimuth: 200, altitude: 35 });
+  }))
+  : null;
+const acts = { buildings: buildingsAct, transit: transitAct, ...(chicagoActivity
+  ? { ridership: chicagoActivity.ridershipAct, divvy: chicagoActivity.divvyAct }
+  : {}) };
+if (cityId === "chicago") {
+  const select = document.getElementById("act");
+  select.options[0].textContent = "Chicago · buildings";
+  select.options[1].textContent = "Chicago · L trains";
+  for (const [id, label] of [["ridership", "Chicago · station ridership"], ["divvy", "Chicago · Divvy flows"]]) {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = label;
+    select.add(option);
+  }
+}
 let actId = params.get("act") ?? "buildings";
 let current = null;
 
 function setAct(id) {
+  if (!acts[id]) throw new Error(`Unknown act: ${id}`);
+  chicagoActivity?.hide();
   actId = id;
   current = acts[id];
   current.enter();
