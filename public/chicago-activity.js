@@ -223,7 +223,7 @@ export async function createChicagoActivity(map, maplibregl, prepare) {
         series: hourlyTrips,
         playhead: state.hour / 23,
         labels: ["12 AM", "NOON", "11 PM"],
-        credit: "Divvy trips, Sep 18 2019 · raised arcs = busiest origin–destination connections, not routes",
+        credit: "Divvy Sep 18 2019 · arcs connect endpoints, not routes",
       };
     },
   };
