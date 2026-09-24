@@ -21,9 +21,8 @@ function wrap(text: string) {
   return lines.slice(0, 3);
 }
 
-export function captionSvg(width: number, height: number, edit: TimelapseEdit) {
+export function captionLayout(width: number, height: number, edit: TimelapseEdit) {
   const lines = wrap(edit.text);
-  if (!lines.length) return "";
   const font = Math.round(width * 0.042);
   const lineHeight = Math.round(font * 1.22);
   const pad = Math.round(width * 0.028);
@@ -33,6 +32,12 @@ export function captionSvg(width: number, height: number, edit: TimelapseEdit) {
   const boxY = Math.round(height * ({ top: 0.28, middle: 0.5, bottom: 0.73 }[edit.position]) - boxHeight / 2);
   const textX = Math.round(width / 2);
   const textY = boxY + pad + font;
+  return { lines, font, lineHeight, boxX, boxY, boxWidth, boxHeight, textX, textY };
+}
+
+export function captionSvg(width: number, height: number, edit: TimelapseEdit) {
+  const { lines, font, lineHeight, boxX, boxY, boxWidth, boxHeight, textX, textY } = captionLayout(width, height, edit);
+  if (!lines.length) return "";
   const text = lines.map((line, index) => `<text x="${textX}" y="${textY + index * lineHeight}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${font}" fill="#ffffff">${escapeXml(line)}</text>`).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" rx="${Math.round(width * 0.016)}" fill="#070b18" fill-opacity="0.82"/>${text}</svg>`;
 }

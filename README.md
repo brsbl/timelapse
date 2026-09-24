@@ -17,7 +17,7 @@ The Chicago ridership and Divvy scenes use different 3D encodings from the build
 
 ## Run the examples
 
-Requires Node 22+, `ffmpeg`, `curl`, and `unzip`. The BB plugin additionally needs `ffprobe` and ImageMagick `magick` on the workspace host.
+Requires Node 22+, `ffmpeg`, `curl`, and `unzip`. The BB plugin additionally needs `ffprobe` and a bold TrueType font on the workspace host.
 
 ```sh
 npm install
